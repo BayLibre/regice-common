@@ -61,7 +61,7 @@ def open_resource(module_name, fname):
                 continue
         raise OSError
 
-    pkg = Requirement(module_name.split('.')[0])
+    pkg = module_name.split('.')[0]
     files = get_resource_list(module_name, '/', '.*' + fname)
     if not files:
         raise OSError
@@ -79,7 +79,7 @@ def get_resource_list(module_name, path, pattern=None):
         :return: A list of resources
     """
     out = []
-    pkg = Requirement(module_name.split('.')[0])
+    pkg = module_name.split('.')[0]
     files = resource_listdir(pkg, path)
     for file in files:
         new_path = '{}/{}'.format(path, file)
