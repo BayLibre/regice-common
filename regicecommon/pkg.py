@@ -35,7 +35,8 @@ import importlib
 import re
 
 from pkg_resources import resource_isdir, resource_listdir, resource_stream
-from pkg_resources import Requirement, iter_entry_points
+from pkg_resources import Requirement, iter_entry_points, DistributionNotFound
+from pkgutil import iter_modules
 
 def open_resource(module_name, fname):
     """
@@ -44,9 +45,22 @@ def open_resource(module_name, fname):
         This lookup for 'fname' in list of resources and open it if it exists.
         In the case where the resource doesn't exist, this raises OSError.
 
+        :param module_name: Name of module where the resource is located.
+                            Could be None if module name is unknown.
         :param fname: Name of the file to open. It could be a pattern.
         :return: A file object for the first resource matching with fname
     """
+    if not module_name:
+        for finder, name, ispkg in iter_modules():
+            try:
+                if 'regice' in name or 'Regice' in name:
+                    return open_resource(name, fname)
+            except OSError:
+                continue
+            except DistributionNotFound:
+                continue
+        raise OSError
+
     pkg = Requirement(module_name.split('.')[0])
     files = get_resource_list(module_name, '/', '.*' + fname)
     if not files:
