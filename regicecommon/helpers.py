@@ -30,9 +30,12 @@
     such as configuring argparse arguments, allocating regice and loading SVD.
 """
 
+import os
+
 from argparse import ArgumentParser
 from libregice import Regice, RegiceOpenOCD, RegiceJLink, RegiceClientTest
-from regicecommon.pkg import init_modules_args
+from regicecommon.pkg import init_modules_args, open_resource
+from svd import SVD, SVDText
 
 def regice_add_arguments(parser):
     """
@@ -102,9 +105,28 @@ def init_regice(args):
     if args.test:
         client = RegiceClientTest()
 
-    regice = Regice(client)
-
-    if args.svd:
-        regice.load_svd(args.svd)
+    svd = load_svd(args.svd)
+    regice = Regice(client, svd)
 
     return regice
+
+def load_svd(file):
+    """
+        Load the SVD file
+
+        Load a SVD file. If the file name is a valid path, the function will
+        load the file. Otherwise, the function will try to get the SVD file
+        from package. If the function can't find a SVD file, this raises a
+        FileNotFoundError error.
+
+        :param file: The name of the file to open to load the SVD
+    """
+    try:
+        if os.path.exists(file):
+            svd = SVD(file)
+        else:
+            svd = SVDText(open_resource(None, file).read())
+        svd.parse()
+        return svd
+    except OSError:
+        raise FileNotFoundError
