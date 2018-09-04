@@ -106,3 +106,21 @@ def get_compatible_module(name):
             if is_compatible_with(name):
                 return importlib.import_module(entrypoint.module_name)
     return None
+
+def init_modules_args(parser, modules):
+    """
+        Initialize arguments parser with agrguments from modules
+
+        Modules may provide arguments. This goes trhough all modules providing
+        arguments and add them to arguments parser if that is required
+        (listed in modules).
+
+        :param modules: A list of modules name
+    """
+    if not modules:
+        return
+
+    for entrypoint in iter_entry_points('regice'):
+        if entrypoint.name == 'init_args' and entrypoint.module_name in modules:
+            init_args = entrypoint.load()
+            init_args(parser)
