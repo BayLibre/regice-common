@@ -121,6 +121,7 @@ def init_modules_args(parser, modules):
         return
 
     for entrypoint in iter_entry_points('regice'):
-        if entrypoint.name == 'init_args' and entrypoint.module_name in modules:
+        module_name = entrypoint.module_name.split('.')[0]
+        if entrypoint.name == 'init_args' and module_name in modules:
             init_args = entrypoint.load()
             init_args(parser)
