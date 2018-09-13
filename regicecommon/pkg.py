@@ -125,3 +125,27 @@ def init_modules_args(parser, modules):
         if entrypoint.name == 'init_args' and module_name in modules:
             init_args = entrypoint.load()
             init_args(parser)
+
+def process_modules_args(device, args, modules):
+    """
+        Process arguments using process_args() from modules
+
+        Modules may provide arguments. This goes trhough all modules providing
+        arguments and do something with them if that is required
+        (listed in modules).
+
+        :param device: A Device object
+        :param args: Parsed argument from ArgumentParser
+        :param modules: A list of modules name
+        :return: A dictionary with values returned by process_args
+    """
+    if not modules:
+        return {}
+
+    results = {}
+    for entrypoint in iter_entry_points('regice'):
+        module_name = entrypoint.module_name.split('.')[0]
+        if entrypoint.name == 'process_args' and module_name in modules:
+            process_args = entrypoint.load()
+            results.update(process_args(device, args))
+    return results

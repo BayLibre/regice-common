@@ -31,49 +31,12 @@
 """
 
 import os
+import sys
 
 from argparse import ArgumentParser
-from libregice import Regice, RegiceOpenOCD, RegiceJLink, RegiceClientTest
-from regicecommon.pkg import init_modules_args, open_resource
+from regicecommon.pkg import open_resource
+from regicecommon.pkg import init_modules_args, process_modules_args
 from svd import SVD, SVDText
-
-def regice_add_arguments(parser):
-    """
-       Add common regice arguments
-
-       This adds some arguments to the parser to select and configure the
-       regice client.
-
-       :param parser: The argument parser to setup
-    """
-    parser.add_argument(
-        "--svd",
-        help="SVD file that contains registers definition"
-    )
-
-    parser.add_argument(
-        "--openocd", action='store_true',
-        help="Use openocd to connect to target"
-    )
-
-    group = parser.add_argument_group('jlink')
-    group.add_argument(
-        "--jlink", action='store_true',
-        help="Use JLink to connect to target"
-    )
-    group.add_argument(
-        "--jlink-script", default=None,
-        help="Load and run a JLink script before to connect to target"
-    )
-    group.add_argument(
-        "--jlink-device", default=None,
-        help="Name of device to connect to"
-    )
-
-    parser.add_argument(
-        "--test", action='store_true',
-        help="Use a mock as target"
-    )
 
 def init_argument_parser(modules):
     """
@@ -87,28 +50,29 @@ def init_argument_parser(modules):
         :return: An argument parser object
     """
     parser = ArgumentParser()
-    regice_add_arguments(parser)
+    modules.append('libregice')
     init_modules_args(parser, modules)
     return parser
 
-def init_regice(args):
+def process_arguments(parser, modules):
     """
-        Allocate and init regice
+        Parse and process the arguments
 
-        This allocate regice and init it using the arguments provided by user.
-        :param args: The arguments (parsed by argparse) to use to setup regice
+        This calls process_args for modules defining it.
+        The modules could update a Device object, or return a dict with the
+        values to return.
+        There is no way to control in which order modules will be loaded,
+        so nothing should be expected.
+        :param parser: The argument parser object
+        :param modules: A liste of module name
+        :return: A tuple of device, parsed args and an dict with value returned
+                 by modules.
     """
-    if args.openocd:
-        client = RegiceOpenOCD()
-    if args.jlink:
-        client = RegiceJLink(args)
-    if args.test:
-        client = RegiceClientTest()
-
-    svd = load_svd(args.svd)
-    regice = Regice(client, svd)
-
-    return regice
+    args = parser.parse_args(sys.argv[1:])
+    results = process_modules_args(None, args, ['libregice'])
+    device = results['device']
+    results.update(process_modules_args(device, args, modules))
+    return device, args, results
 
 def load_svd(file):
     """
