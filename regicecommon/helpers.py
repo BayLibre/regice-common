@@ -38,23 +38,28 @@ from regicecommon.pkg import open_resource
 from regicecommon.pkg import init_modules_args, process_modules_args
 from svd import SVD, SVDText
 
-def init_argument_parser(modules):
+def init_argument_parser(modules, device=None):
     """
         Initialize the argument parser
 
         This initializes the argument parser with common arguments.
-        In addition, if modules name are providen, this also adds arguments from
+        In addition, if modules name are provided, this also adds arguments from
         these modules.
 
-        :param modules: A liste of module name
+        :param modules: A list of module name
+        :param device: If not None, a Device object to initialize device
+                       arguments.
         :return: An argument parser object
     """
     parser = ArgumentParser()
+    if device:
+        parser.add_argument('--help-device', action='store_true',
+                            help='Print help for arguments specific to device')
     modules.append('libregice')
-    init_modules_args(parser, modules)
+    init_modules_args(device, parser, modules)
     return parser
 
-def process_arguments(parser, modules):
+def process_arguments(parser, modules, device=None):
     """
         Parse and process the arguments
 
@@ -65,12 +70,21 @@ def process_arguments(parser, modules):
         so nothing should be expected.
         :param parser: The argument parser object
         :param modules: A liste of module name
+        :param device: If not None, a Device object to process device
+                       arguments.
         :return: A tuple of device, parsed args and an dict with value returned
                  by modules.
     """
-    args = parser.parse_args(sys.argv[1:])
-    results = process_modules_args(None, args, ['libregice'])
-    device = results['device']
+    if not device:
+        args, unknown = parser.parse_known_args(sys.argv[1:])
+        results = process_modules_args(None, args, ['libregice'])
+        device = results['device']
+    else:
+        results = {}
+        args = parser.parse_args(sys.argv[1:])
+        if args.help_device:
+            args = parser.parse_args(['-h'])
+
     results.update(process_modules_args(device, args, modules))
     return device, args, results
 

@@ -107,14 +107,16 @@ def get_compatible_module(name):
                 return importlib.import_module(entrypoint.module_name)
     return None
 
-def init_modules_args(parser, modules):
+def init_modules_args(device, parser, modules):
     """
-        Initialize arguments parser with agrguments from modules
+        Initialize arguments parser with arguments from modules
 
-        Modules may provide arguments. This goes trhough all modules providing
+        Modules may provide arguments. This goes through all modules providing
         arguments and add them to arguments parser if that is required
         (listed in modules).
 
+        :param device: A Device object
+        :param parser: An ArgumentParser object
         :param modules: A list of modules name
     """
     if not modules:
@@ -122,9 +124,13 @@ def init_modules_args(parser, modules):
 
     for entrypoint in iter_entry_points('regice'):
         module_name = entrypoint.module_name.split('.')[0]
-        if entrypoint.name == 'init_args' and module_name in modules:
-            init_args = entrypoint.load()
-            init_args(parser)
+        if module_name in modules:
+            if entrypoint.name == 'init_args':
+                init_args = entrypoint.load()
+                init_args(parser)
+            if entrypoint.name == 'init_device_args' and device:
+                init_args = entrypoint.load()
+                init_args(device, parser)
 
 def process_modules_args(device, args, modules):
     """
